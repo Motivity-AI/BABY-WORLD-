@@ -290,5 +290,55 @@ const _rh=renderHome;renderHome=function(){_rh();renderQ()};
 renderQ();
 })();
 </script>
+
+<script>
+(function(){
+const MED=[[3.3,4.5,5.6,6.4,7.0,7.5,7.9,8.3,8.6,8.9,9.2,9.4,9.6,9.9,10.1,10.3,10.5,10.7,10.9,11.1,11.3,11.5,11.8,12.0,12.2],[3.2,4.2,5.1,5.8,6.4,6.9,7.3,7.6,7.9,8.2,8.5,8.7,8.9,9.2,9.4,9.6,9.8,10.0,10.2,10.4,10.6,10.9,11.1,11.3,11.5]];
+const MN={allergies:['⚠️ الحساسية','⚠️ Allergies','المادة أو الطعام','Substance or food'],meds:['💊 الأدوية','💊 Medicines','اسم الدواء','Medicine','الجرعة كما وصفها الطبيب','Dose as prescribed'],contacts:['📞 الطبيب وجهات الطوارئ','📞 Doctor & emergency contacts','الاسم والعلاقة','Name & role','الهاتف','Phone'],words:['💬 الكلمات الأولى','💬 First words','كلمة جديدة','New word']};
+document.head.insertAdjacentHTML('beforeend','<style>body.dark{--bg:#17211c;--paper:#1f2d26;--ink:#e6eee8;--muted:#9bb0a3;--line:#2e4037;--sage2:#2a3d33;--shadow:none}body.dark .pill,body.dark .quick,body.dark .age-btn,body.dark .btn.light,body.dark .field input,body.dark .field select,body.dark .field textarea,body.dark .mile,body.dark .mini-in{background:#243229;color:var(--ink);border-color:var(--line)}body.dark .info{background:#22352b;color:#bcd2c3;border-color:var(--line)}body.dark .notice{background:#3a3220;color:#e3d3a0;border-color:#554a2c}body.dark .btn.light{color:#bcd2c3}body.dark .progress{background:#2a3d33}.mini-in{border:1px solid var(--line);border-radius:12px;padding:11px;width:100%;background:#fff;color:var(--ink)}.sbar{display:flex;gap:4px;align-items:flex-end;height:46px}.sbar div{flex:1;border-radius:4px}</style>');
+$('langBtn').insertAdjacentHTML('beforebegin','<button class="pill" id="darkBtn" aria-label="Dark mode">🌙</button>');
+$('qlog').insertAdjacentHTML('afterend','<div class="card" id="homeX" style="margin-top:14px"></div>');
+$('page-growth').insertAdjacentHTML('beforeend','<div class="section-head"><h3 id="wcT"></h3></div><div class="card" id="wChart"></div><div id="miniWords"></div>');
+$('privacyInfo').insertAdjacentHTML('beforebegin','<div id="miniContacts"></div><div id="miniAllergies"></div><div id="miniMeds"></div><div class="form-actions"><button class="btn" id="repBtn"></button></div>');
+const app=()=>{document.body.classList.toggle('dark',!!state.dark)};app();
+$('darkBtn').onclick=()=>{state.dark=!state.dark;save();app();$('darkBtn').textContent=state.dark?'☀️':'🌙'};
+$('darkBtn').textContent=state.dark?'☀️':'🌙';
+const lt=d=>todayKey(d)+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+const mins=a=>Math.max(0,(new Date(a.end)-new Date(a.start))/6e4);
+const sleepOn=d=>state.sleeps.filter(x=>x.end.slice(0,10)===d).reduce((a,x)=>a+mins(x),0);
+const logsOn=(k,d)=>(state.logs||[]).filter(x=>(!k||x.k===k)&&todayKey(new Date(x.time))===d).length;
+const bars=(v,c)=>{const m=Math.max(...v,1);return '<div class="sbar">'+v.map(x=>`<div title="${x}" style="background:${c};height:${Math.max(6,x/m*100)}%"></div>`).join('')+'</div>'};
+const hm=m=>Math.floor(m/60)+t('س ','h ')+Math.round(m%60)+t('د','m');
+function ens(){['allergies','meds','contacts','words'].forEach(k=>{if(!Array.isArray(state[k]))state[k]=[]})}
+function renderX(){ens();const D=todayKey(),days=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return todayKey(d)});
+ const up=state.vaccines.filter(v=>v.date>=D).sort((a,b)=>a.date.localeCompare(b.date))[0],run=state.sleepTimer;
+ const dd=up?Math.round((new Date(up.date)-new Date(D))/864e5):0;
+ $('homeX').innerHTML=`<h3>📊 ${t('ملخص اليوم','Today at a glance')}</h3><div class="formgrid" style="grid-template-columns:repeat(3,1fr)"><div class="field"><label>🍼 ${t('رضعات','Feeds')}</label><strong>${logsOn('feed',D)}</strong></div><div class="field"><label>💧 ${t('حفاضات','Diapers')}</label><strong>${logsOn('wet',D)+logsOn('dirty',D)}</strong></div><div class="field"><label>🌙 ${t('نوم','Sleep')}</label><strong>${hm(sleepOn(D))}</strong></div></div>
+ <div class="timer" style="margin:12px 0;text-align:center"><div id="sClock" style="font-size:26px;font-weight:800;font-family:Nunito,monospace">${run?'':'00:00:00'}</div><button class="btn small" id="sBtn" style="margin-top:8px">${run?t('⏹ إنهاء النوم','⏹ End sleep'):t('▶ بدء مؤقت النوم','▶ Start sleep timer')}</button></div>
+ ${up?`<div class="info">📅 ${esc(up.name)} · ${up.date} (${dd===0?t('اليوم','today'):t('بعد '+dd+' يوم','in '+dd+' days')})</div>`:''}
+ <small style="color:var(--muted)">${t('الرضعات آخر 7 أيام','Feeds, last 7 days')}</small>${bars(days.map(d=>logsOn('feed',d)),'#789783')}<small style="color:var(--muted)">${t('ساعات النوم آخر 7 أيام','Sleep hours, last 7 days')}</small>${bars(days.map(d=>Math.round(sleepOn(d)/6)/10),'#c4a35a')}`;
+ $('sBtn').onclick=()=>{if(state.sleepTimer){state.sleeps.push({id:uid(),start:lt(new Date(state.sleepTimer)),end:lt(new Date())});state.sleepTimer=null}else state.sleepTimer=new Date().toISOString();save();renderX()};tick()}
+function tick(){const e=$('sClock');if(!e||!state.sleepTimer)return;const s=Math.floor((Date.now()-new Date(state.sleepTimer))/1000),f=n=>String(n).padStart(2,'0');e.textContent=f(Math.floor(s/3600))+':'+f(Math.floor(s%3600/60))+':'+f(s%60)}
+setInterval(tick,1000);
+function renderChart(){const el=$('wChart');$('wcT').textContent=t('مخطط الوزن مقابل متوسط WHO','Weight vs WHO median');const b=state.profile.birth,g=state.profile.gender;
+ if(!b){el.innerHTML='<div class="empty">'+t('أضف تاريخ الميلاد وقياسات الوزن لعرض المخطط.','Add birth date and weight measurements to see the chart.')+'</div>';return}
+ const md=g==='girl'?MED[1]:g==='boy'?MED[0]:MED[0].map((v,i)=>(v+MED[1][i])/2),X=m=>34+m/24*296,Y=w=>150-(w-2)/14*130;
+ const pts=state.measurements.filter(x=>+x.weight>0).map(x=>({m:(new Date(x.date)-new Date(b))/2629800000,w:+x.weight})).filter(q=>q.m>=0&&q.m<=24&&q.w<20).sort((a,c)=>a.m-c.m);
+ const ln=pts.map(q=>X(q.m).toFixed(1)+','+Y(q.w).toFixed(1)).join(' ');
+ el.innerHTML=`<svg viewBox="0 0 340 175" style="width:100%;direction:ltr" role="img" aria-label="${t('مخطط الوزن','Weight chart')}"><g stroke="var(--line)" font-size="8" fill="var(--muted)">${[4,8,12,16].map(w=>`<line x1="34" x2="330" y1="${Y(w)}" y2="${Y(w)}"/><text x="2" y="${Y(w)+3}" stroke="none">${w} kg</text>`).join('')}${[0,6,12,18,24].map(m=>`<text x="${X(m)-4}" y="168" stroke="none">${m}</text>`).join('')}</g><polyline fill="none" stroke="var(--muted)" stroke-dasharray="4 3" stroke-width="2" points="${md.map((w,i)=>X(i).toFixed(1)+','+Y(w).toFixed(1)).join(' ')}"/>${pts.length>1?`<polyline fill="none" stroke="#456b55" stroke-width="2.5" points="${ln}"/>`:''}${pts.map(q=>`<circle cx="${X(q.m)}" cy="${Y(q.w)}" r="4" fill="#456b55"/>`).join('')}</svg><div class="chart-legend" style="font-size:11px;color:var(--muted)">- - - ${t('متوسط WHO','WHO median')} · ● ${t('طفلك','Your child')} (${t('الأشهر','months')})</div><div class="info">${t('للعرض فقط وليس تشخيصاً. الأطفال الأصحاء يقعون في نطاق واسع حول المتوسط. ناقش القياسات مع طبيبك.','For display only, not a diagnosis. Healthy children fall in a wide range around the median. Discuss measurements with your doctor.')}${!pts.length?' '+t('أضف قياس وزن من صفحة الصحة.','Add a weight on the Health page.'):''}</div>`}
+function mini(k){const h=$('mini'+k[0].toUpperCase()+k.slice(1)),c=MN[k],two=c.length>4;ens();
+ h.innerHTML=`<div class="card" style="margin-top:14px"><h3>${t(c[0],c[1])}</h3><div class="formgrid" style="grid-template-columns:${two?'1fr 1fr':'1fr'}"><input class="mini-in" id="${k}A" placeholder="${t(c[2],c[3])}" aria-label="${t(c[2],c[3])}">${two?`<input class="mini-in" id="${k}B" placeholder="${t(c[4],c[5])}" aria-label="${t(c[4],c[5])}">`:''}</div><div class="form-actions"><button class="btn small" onclick="miniAdd('${k}')">${t('إضافة','Add')}</button></div>${state[k].map(x=>`<div class="list-row"><div class="grow"><strong>${esc(x.a)}</strong><small>${k==='contacts'?`<a href="tel:${esc(String(x.b).replace(/[^\d+]/g,''))}">${esc(x.b)}</a>`:esc(x.b||'')}</small></div><button class="btn light small" onclick="miniDel('${k}','${x.id}')" aria-label="${t('حذف','Delete')}">×</button></div>`).join('')}</div>`}
+window.miniAdd=k=>{const a=$(k+'A').value.trim(),bb=$(k+'B');if(!a)return;state[k].push({id:uid(),a,b:bb?bb.value.trim():'',date:todayKey()});save();mini(k)};
+window.miniDel=async(k,id)=>{if(!await uiConfirm(t('حذف هذا العنصر؟','Delete this item?'),true,t('حذف','Delete')))return;state[k]=state[k].filter(x=>x.id!==id);save();mini(k)};
+window.makeReport=async()=>{ens();const D=todayKey(),days=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return todayKey(d)}),P=state.profile,ms=state.measurements.slice(-5);
+ const tx=[t('تقرير للطبيب – عالم طفلي','Doctor report – Baby World'),t('الاسم: ','Name: ')+(P.name||'—'),t('العمر: ','Age: ')+ageText(),t('الحساسية: ','Allergies: ')+(state.allergies.map(x=>x.a).join('، ')||'—'),t('الأدوية: ','Medicines: ')+(state.meds.map(x=>x.a+(x.b?' ('+x.b+')':'')).join('، ')||'—'),'',t('آخر القياسات:','Latest measurements:'),...ms.map(x=>x.date+' · '+(x.weight||'-')+' kg · '+(x.height||'-')+' cm · '+(x.head||'-')+' cm'),'',t('الحرارة (آخر 10):','Temperatures (last 10):'),...(state.logs||[]).filter(x=>x.k==='temp').slice(-10).map(x=>new Date(x.time).toLocaleString()+' · '+x.v+'°C'),'',t('آخر 7 أيام: رضعات ','Last 7 days: feeds ')+days.reduce((a,d)=>a+logsOn('feed',d),0)+t('، حفاضات ',', diapers ')+days.reduce((a,d)=>a+logsOn('wet',d)+logsOn('dirty',d),0)+t('، متوسط النوم يومياً ',', average sleep/day ')+hm(days.reduce((a,d)=>a+sleepOn(d),0)/7),'',t('مواعيد قادمة:','Upcoming:'),...state.vaccines.filter(v=>v.date>=D).map(v=>v.date+' · '+v.name)].join('\n');
+ const blob=new Blob([tx],{type:'text/plain'});try{const dl=window.claude&&await claude.use('downloads');if(dl){await dl.save({filename:'baby-report.txt',data:blob});return}}catch(e){if(e&&e.code==='declined')return}
+ const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='baby-report.txt';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500)};
+function all(){$('repBtn').textContent=t('📄 تقرير للطبيب','📄 Doctor report');$('repBtn').onclick=makeReport;renderX();renderChart();Object.keys(MN).forEach(mini)}
+const _rh2=renderHome;renderHome=function(){_rh2();all()};
+const _g2=go;go=function(p){_g2(p);all()};
+all();
+})();
+</script>
 </body>
 </html>
